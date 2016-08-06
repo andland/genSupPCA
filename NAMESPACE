@@ -3,7 +3,6 @@
 S3method(predict,gsmf)
 S3method(predict,gspca)
 export(exp_fam_deviance)
-export(exp_fam_log_like)
 export(genSupMF)
 export(genSupPCA)
 export(inv.logit.mat)

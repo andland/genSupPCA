@@ -6,9 +6,9 @@
 \usage{
 genSupPCA(x, y, k = 2, alpha = NULL, m = 4, family_x = c("gaussian",
   "binomial", "poisson", "multinomial"), family_y = c("gaussian", "binomial",
-  "poisson"), quiet = TRUE, max_iters = 100, max_iters_per = 25,
+  "poisson"), quiet = TRUE, max_iters = 100, max_iters_per = 5,
   conv_criteria = 1e-05, discrete_deriv = FALSE, random_start = FALSE,
-  start_U, mu, start_beta)
+  start_U, mu, start_beta, grassmann = TRUE)
 }
 \arguments{
 \item{x}{covariate matrix}
@@ -43,6 +43,9 @@ instead of the closed form derivative with \code{beta} held constant}
 \item{mu}{specific value for \code{mu}, the mean vector of \code{x}}
 
 \item{start_beta}{initial value for \code{beta}}
+
+\item{grassmann}{logical; wether to optimize \code{U} on the Grassmann manifold.
+If \code{FALSE}, will optimize \code{U} on the Stiefel manifold}
 }
 \value{
 An S3 object of class \code{gspca} which is a list with the
@@ -72,7 +75,7 @@ mat = matrix(rpois(rows * cols, c(exp(mat_np))), rows, cols)
 response = rbinom(rows, 1, rowSums(mat) / max(rowSums(mat)))
 
 mod = genSupPCA(mat, response, k = 1, alpha = 0, family_x = "poisson", family_y = "binomial",
-                quiet = FALSE, max_iters_per = 1, discrete_deriv = FALSE)
+                quiet = FALSE, max_iters_per = 5, grassmann = FALSE)
 
 plot(inv.logit.mat(cbind(1, mod$PCs) \%*\% mod$beta), response)
 plot(rowSums(mat), response)

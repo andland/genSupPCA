@@ -4,7 +4,7 @@
 \alias{predict.gsmf}
 \title{Predict response with a generalized supervised MF model}
 \usage{
-\method{predict}{gsmf}(object, newdata, type = c("link", "response"),
+\method{predict}{gsmf}(object, newdata, type = c("link", "response", "PCs"),
   quiet = TRUE, max_iters = 1000, conv_criteria = 1e-05, start_A, ...)
 }
 \arguments{
@@ -14,8 +14,9 @@
 If missing, will use the data that \code{object} was fit on}
 
 \item{type}{the type of fitting required.
-\code{type = "link"} gives matrix on the natural parameter scale and
-\code{type = "response"} gives matrix on the response scale}
+\code{type = "link"} gives response variable on the natural parameter scale,
+\code{type = "response"} gives response variable on the response scale, and
+\code{type = "response"} gives matrix of principal components of \code{x}}
 
 \item{...}{Additional arguments}
 }

@@ -4,7 +4,8 @@
 \alias{predict.gspca}
 \title{Predict response with a generalized supervised PCA model}
 \usage{
-\method{predict}{gspca}(object, newdata, type = c("link", "response"), ...)
+\method{predict}{gspca}(object, newdata, type = c("link", "response", "PCs"),
+  ...)
 }
 \arguments{
 \item{object}{generalized supervised PCA object}
@@ -13,8 +14,9 @@
 If missing, will use the data that \code{object} was fit on}
 
 \item{type}{the type of fitting required.
-\code{type = "link"} gives matrix on the natural parameter scale and
-\code{type = "response"} gives matrix on the response scale}
+\code{type = "link"} gives response variable on the natural parameter scale,
+\code{type = "response"} gives response variable on the response scale, and
+\code{type = "response"} gives matrix of principal components of \code{x}}
 
 \item{...}{Additional arguments}
 }
