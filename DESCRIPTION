@@ -1,0 +1,22 @@
+Package: genSupPCA
+Type: Package
+Title: Supervised Dimensionality Reduction for Exponential Family Data
+Version: 0.1
+Date: 2016-07-10
+NeedsCompilation: yes
+ByteCompile: yes
+Author: Andrew J. Landgraf
+Maintainer: Andrew J. Landgraf <andland@gmail.com>
+Description: Combining dimensionality reduction and supervised learning for exponential family data.
+License: MIT + file LICENSE
+LazyData: TRUE
+URL: https://github.com/andland/genSupPCA
+Depends: Matrix
+Imports:
+    ggplot2,
+    GrassmannOptim,
+    logisticPCA,
+    RSpectra (>= 0.10-0)
+Suggests:
+    testthat (>= 0.11.0)
+RoxygenNote: 5.0.1
