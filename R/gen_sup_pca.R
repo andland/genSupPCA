@@ -167,16 +167,55 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
   }
   for (ii in seq_len(max_iters)) {
     if (!discrete_deriv) {
-      mod_beta = suppressWarnings(
-        stats::glm.fit(
-          x = cbind(1, eta_centered %*% U),
-          y = y,
-          family = eval(parse(text = paste0("stats::", family_y, "()"))),
-          control = list(maxit = max_iters_per),
-          start = beta
+      if (ii == 1) {
+        mod_beta = suppressWarnings(
+          stats::glm.fit(
+            x = cbind(1, eta_centered %*% U),
+            y = y,
+            family = eval(parse(text = paste0("stats::", family_y, "()"))),
+            control = list(maxit = max_iters_per),
+            start = beta
+          )
         )
-      )
-      beta = mod_beta$coefficients
+        beta = mod_beta$coefficients
+      } else {
+        for (jj in seq_len(max_iters_per)) {
+          beta_lag = beta
+
+          theta_y = cbind(1, eta_centered %*% U) %*% beta
+          first_dir = exp_fam_mean(theta_y, family_y)
+          second_dir = as.numeric(exp_fam_variance(theta_y, family_y))
+          W = max(second_dir)
+
+          # ensure the beta update improves deviance of y
+          last_y_dev = exp_fam_deviance(y, theta_y, family = family_y)
+          Z = as.matrix(theta_y + (y - first_dir) / W)
+          beta_temp = as.numeric(solve(crossprod(cbind(1, eta_centered %*% U)) + diag(0.01, k + 1, k + 1),
+                                  crossprod(cbind(1, eta_centered %*% U), Z)))
+          if (any(is.nan(beta_temp))) {
+            rnorm(1)
+          }
+          this_y_dev = exp_fam_deviance(y, cbind(1, eta_centered %*% U) %*% beta_temp,
+                                        family = family_y)
+          if (this_y_dev <= last_y_dev & !any(is.nan(beta_temp))) {
+            beta = beta_temp
+          } else {
+            if (!quiet) {
+              cat("restarting beta\n")
+            }
+            mod_beta = suppressWarnings(
+              stats::glm.fit(
+                x = cbind(1, eta_centered %*% U),
+                y = y,
+                family = eval(parse(text = paste0("stats::", family_y, "()"))),
+                control = list(maxit = 1),
+                start = NULL
+              )
+            )
+            beta = mod_beta$coefficients
+          }
+        }
+      }
       if (grassmann) {
         params[["beta"]] <- beta
       }
@@ -200,7 +239,7 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
       loss_trace[ii] <- -mod_U$fvalues[length(mod_U$fvalues)]
     } else {
       mod_U = FOptM::OptStiefelGBB(
-        stiefel_objfun, U, opts = list(mxitr = max_iters_per, record = 0, tau = tau),
+        stiefel_objfun, U, opts = list(mxitr = max_iters_per, record = 0, tau = tau, projG = 1),
         x = x, y = y, family_x = family_x, family_y = family_y, mu = mu,
         eta_centered = eta_centered, beta = beta, alpha = alpha
       )

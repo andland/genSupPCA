@@ -13,7 +13,8 @@ sup_dim_red_log_like <- function(x, y, theta_x, theta_y, family_x, family_y, alp
     beta = mod_beta$coefficients
     theta_y = cbind(1, eta_centered %*% U) %*% beta
   }
-  (-1 * exp_fam_deviance(y, theta_y, family_y) - alpha * exp_fam_deviance(x, theta_x, family_x)) #/ nrow(x) / (ncol(x) * alpha + 1)
+  -exp_fam_deviance(y, theta_y, family_y) / (ncol(x) * alpha + 1) -
+    (alpha / (ncol(x) * alpha + 1)) * exp_fam_deviance(x, theta_x, family_x)
 }
 
 sup_dim_red_directional_deriv <- function(x, y, theta_x, theta_y, family_x, family_y, alpha, eta_centered, beta, U, Z) {
@@ -23,7 +24,8 @@ sup_dim_red_directional_deriv <- function(x, y, theta_x, theta_y, family_x, fami
   term1 = beta[-1] %*% crossprod(y - Ey, eta_centered) %*% Z
   term2a = crossprod(x - Ex, eta_centered)
   term2 = t(U) %*% (term2a + t(term2a)) %*% Z
-  2 * (term1 + alpha * term2) / nrow(x) / (ncol(x) * alpha + 1)
+  2 * term1 / (ncol(x) * alpha + 1) +
+    2 * (alpha / (ncol(x) * alpha + 1)) * term2
 }
 
 
@@ -67,10 +69,11 @@ sup_dim_red_deriv <- function(x, y, theta_x, theta_y, family_x, family_y, alpha,
   Ex = exp_fam_mean(theta_x, family_x)
   Ey = exp_fam_mean(theta_y, family_y)
 
-  term1 = beta[-1] %*% crossprod(y - Ey, eta_centered)
-  term2a = crossprod(x - Ex, eta_centered)
-  term2 = t(U) %*% (term2a + t(term2a))
-  -2 * t(term1 + alpha * term2) # / nrow(x) / (ncol(x) * alpha + 1)
+  term1 = crossprod(eta_centered, Ey - y) %*% t(beta[-1])
+  term2a = crossprod(Ex - x, eta_centered)
+  term2 = (term2a + t(term2a)) %*% U
+  2 * term1 / (ncol(x) * alpha + 1) +
+    2 * (alpha / (ncol(x) * alpha + 1)) * term2
 }
 
 stiefel_objfun <- function(U, x, y, family_x, family_y, mu, eta_centered, beta, alpha) {
