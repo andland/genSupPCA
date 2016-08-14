@@ -12,7 +12,6 @@
 #' @param random_start whether to randomly initialize \code{A} and \code{B}
 #' @param start_A initial value for \code{A}
 #' @param start_B initial value for \code{B}
-#' @param start_beta initial value for \code{beta}
 #' @param mu specific value for \code{mu}, the mean vector of \code{x}
 #'
 #' @return An S3 object of class \code{gsmf} which is a list with the
@@ -278,6 +277,8 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
 
 #' @title Predict response with a generalized supervised MF model
 #'
+#' @description Predict response with a generalized supervised MF model
+#'
 #' @param object generalized supervised MF object
 #' @param newdata matrix of the same exponential family as covariates in \code{object}.
 #'  If missing, will use the data that \code{object} was fit on
@@ -285,6 +286,10 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
 #'  \code{type = "link"} gives response variable on the natural parameter scale,
 #'  \code{type = "response"} gives response variable on the response scale, and
 #'  \code{type = "response"} gives matrix of principal components of \code{x}
+#' @param quiet logical; whether the calculation should show progress
+#' @param max_iters maximum number of iterations
+#' @param conv_criteria convergence criteria
+#' @param start_A initial value for \code{A}
 #' @param ... Additional arguments
 #' @examples
 #' # construct a low rank matrices in the natural parameter space
@@ -302,7 +307,8 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
 #' response = rbinom(rows, 1, rowSums(mat) / max(rowSums(mat)))
 #' response_new = rbinom(rows, 1, rowSums(mat_new) / max(rowSums(mat_new)))
 #'
-#' mod = genSupMF(mat, response, k = 2, alpha = 1000, family_x = "poisson", family_y = "binomial", quiet = FALSE)
+#' mod = genSupMF(mat, response, k = 2, alpha = 1000,
+#'                family_x = "poisson", family_y = "binomial", quiet = FALSE)
 #'
 #' plot(predict(mod, type = "response"), response)
 #' plot(predict(mod, mat_new, type = "response"), response_new)

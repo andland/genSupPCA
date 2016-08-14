@@ -20,6 +20,9 @@ If missing, will use the data that \code{object} was fit on}
 
 \item{...}{Additional arguments}
 }
+\description{
+Predict response with a generalized supervised PCA model
+}
 \examples{
 # construct a low rank matrices in the natural parameter space
 rows = 100

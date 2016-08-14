@@ -58,6 +58,23 @@ check_family <- function(x, family) {
   }
 }
 
+exp_fam_guess <- function(x) {
+  distinct_vals = unique(c(x[!is.na(x)]))
+  if (all(distinct_vals %in% c(0, 1))) {
+    family = "binomial"
+    message("Guessing data comes from a binomial distribution because it consists of all 0's and 1's")
+  } else if (all(distinct_vals >= 0 & distinct_vals %% 1 == 0)) {
+    family = "poisson"
+    message("Guessing data comes from a poisson distribution because it consists of all non-negative integers")
+  } else if (all(distinct_vals >=0 & distinct_vals <= 1) & all(rowSums(x, na.rm = TRUE) <= 1)) {
+    family = "multinomial"
+    message("Guessing data comes from a multinomial distribution because all the rows sum to less than 1")
+  } else {
+    family = "gaussian"
+  }
+  return(family)
+}
+
 saturated_natural_parameters <- function(x, family, m) {
   if (family == "gaussian") {
     eta = x
@@ -142,6 +159,15 @@ exp_fam_log_like <- function(x, theta, family, weights = 1.0) {
   }
 }
 
+#' Calculate exponential family deviance
+#'
+#' Calculates the deviance of data assuming it comes from an exponential family
+#'
+#' @param x a vector or matrix of data
+#' @param theta natural parameters. Must be same dimensions as \code{x}
+#' @param family exponential family distribution of data
+#' @param weights weights of datapoints. Must be a scalar or the same dimensions as the data
+#'
 #' @export
 exp_fam_deviance <- function(x, theta, family, weights = 1.0) {
   eta_sat_nat = saturated_natural_parameters(x, family, m = Inf)

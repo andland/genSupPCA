@@ -6,9 +6,9 @@
 \usage{
 genSupPCA(x, y, k = 2, alpha = NULL, m = 4, family_x = c("gaussian",
   "binomial", "poisson", "multinomial"), family_y = c("gaussian", "binomial",
-  "poisson"), quiet = TRUE, max_iters = 100, max_iters_per = 5,
+  "poisson"), quiet = TRUE, max_iters = 100, max_iters_per = 3,
   conv_criteria = 1e-05, discrete_deriv = FALSE, random_start = FALSE,
-  start_U, mu, start_beta, grassmann = TRUE)
+  start_U, mu, start_beta, grassmann = FALSE)
 }
 \arguments{
 \item{x}{covariate matrix}

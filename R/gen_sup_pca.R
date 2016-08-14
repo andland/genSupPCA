@@ -38,6 +38,7 @@
 #' @importFrom stats glm.fit gaussian binomial poisson
 #' @import Matrix
 #' @importFrom GrassmannOptim GrassmannOptim
+#' @importFrom FOptM OptStiefelGBB
 #'
 #' @examples
 #' rows = 100
@@ -60,8 +61,8 @@
 genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
                            family_x = c("gaussian", "binomial", "poisson", "multinomial"),
                            family_y = c("gaussian", "binomial", "poisson"), quiet = TRUE,
-                           max_iters = 100, max_iters_per = 5, conv_criteria = 1e-5, discrete_deriv = FALSE,
-                           random_start = FALSE, start_U, mu, start_beta, grassmann = TRUE) {
+                           max_iters = 100, max_iters_per = 3, conv_criteria = 1e-5, discrete_deriv = FALSE,
+                           random_start = FALSE, start_U, mu, start_beta, grassmann = FALSE) {
 
   family_x = match.arg(family_x)
   family_y = match.arg(family_y)
@@ -170,8 +171,8 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
       if (ii == 1) {
         mod_beta = suppressWarnings(
           stats::glm.fit(
-            x = cbind(1, eta_centered %*% U),
-            y = y,
+            x = cbind(1, eta_centered[!is.na(y), ] %*% U),
+            y = y[!is.na(y)],
             family = eval(parse(text = paste0("stats::", family_y, "()"))),
             control = list(maxit = max_iters_per),
             start = beta
@@ -182,16 +183,16 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
         for (jj in seq_len(max_iters_per)) {
           beta_lag = beta
 
-          theta_y = cbind(1, eta_centered %*% U) %*% beta
+          theta_y = cbind(1, eta_centered[!is.na(y), ] %*% U) %*% beta
           first_dir = exp_fam_mean(theta_y, family_y)
           second_dir = as.numeric(exp_fam_variance(theta_y, family_y))
           W = max(second_dir)
 
           # ensure the beta update improves deviance of y
-          last_y_dev = exp_fam_deviance(y, theta_y, family = family_y)
-          Z = as.matrix(theta_y + (y - first_dir) / W)
-          beta_temp = as.numeric(solve(crossprod(cbind(1, eta_centered %*% U)) + diag(0.01, k + 1, k + 1),
-                                  crossprod(cbind(1, eta_centered %*% U), Z)))
+          last_y_dev = exp_fam_deviance(y[!is.na(y)], theta_y, family = family_y)
+          Z = as.matrix(theta_y + (y[!is.na(y)] - first_dir) / W)
+          beta_temp = as.numeric(solve(crossprod(cbind(1, eta_centered[!is.na(y), ] %*% U)) + diag(0.0, k + 1, k + 1),
+                                  crossprod(cbind(1, eta_centered[!is.na(y), ] %*% U), Z)))
           if (any(is.nan(beta_temp))) {
             rnorm(1)
           }
@@ -205,8 +206,8 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
             }
             mod_beta = suppressWarnings(
               stats::glm.fit(
-                x = cbind(1, eta_centered %*% U),
-                y = y,
+                x = cbind(1, eta_centered[!is.na(y), ] %*% U),
+                y = y[!is.na(y)],
                 family = eval(parse(text = paste0("stats::", family_y, "()"))),
                 control = list(maxit = 1),
                 start = NULL
@@ -268,8 +269,8 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
 
   mod_beta = suppressWarnings(
     stats::glm.fit(
-      x = cbind(1, eta_centered %*% U),
-      y = y,
+      x = cbind(1, eta_centered[!is.na(y), ] %*% U),
+      y = y[!is.na(y)],
       family = eval(parse(text = paste0("stats::", family_y, "()"))),
       start = beta
     )
@@ -304,6 +305,8 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
 }
 
 #' @title Predict response with a generalized supervised PCA model
+#'
+#' @description Predict response with a generalized supervised PCA model
 #'
 #' @param object generalized supervised PCA object
 #' @param newdata matrix of the same exponential family as covariates in \code{object}.

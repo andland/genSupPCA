@@ -2,7 +2,7 @@ Package: genSupPCA
 Type: Package
 Title: Supervised Dimensionality Reduction for Exponential Family Data
 Version: 0.1
-Date: 2016-07-10
+Date: 2016-08-14
 NeedsCompilation: yes
 ByteCompile: yes
 Author: Andrew J. Landgraf
@@ -15,6 +15,7 @@ Depends: Matrix
 Imports:
     ggplot2,
     GrassmannOptim,
+    FOptM,
     logisticPCA,
     RSpectra (>= 0.10-0)
 Suggests:

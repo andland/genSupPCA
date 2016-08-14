@@ -18,7 +18,18 @@ If missing, will use the data that \code{object} was fit on}
 \code{type = "response"} gives response variable on the response scale, and
 \code{type = "response"} gives matrix of principal components of \code{x}}
 
+\item{quiet}{logical; whether the calculation should show progress}
+
+\item{max_iters}{maximum number of iterations}
+
+\item{conv_criteria}{convergence criteria}
+
+\item{start_A}{initial value for \code{A}}
+
 \item{...}{Additional arguments}
+}
+\description{
+Predict response with a generalized supervised MF model
 }
 \examples{
 # construct a low rank matrices in the natural parameter space
@@ -36,7 +47,8 @@ mat_new = matrix(rbinom(rows * cols, 1, c(inv.logit.mat(mat_np_new))), rows, col
 response = rbinom(rows, 1, rowSums(mat) / max(rowSums(mat)))
 response_new = rbinom(rows, 1, rowSums(mat_new) / max(rowSums(mat_new)))
 
-mod = genSupMF(mat, response, k = 2, alpha = 1000, family_x = "poisson", family_y = "binomial", quiet = FALSE)
+mod = genSupMF(mat, response, k = 2, alpha = 1000,
+               family_x = "poisson", family_y = "binomial", quiet = FALSE)
 
 plot(predict(mod, type = "response"), response)
 plot(predict(mod, mat_new, type = "response"), response_new)

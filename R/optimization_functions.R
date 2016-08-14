@@ -4,8 +4,8 @@ sup_dim_red_log_like <- function(x, y, theta_x, theta_y, family_x, family_y, alp
   if (is.null(theta_y)) {
     mod_beta = suppressWarnings(
       stats::glm.fit(
-        x = cbind(1, eta_centered %*% U),
-        y = y,
+        x = cbind(1, eta_centered[!is.na(y), ] %*% U),
+        y = y[!is.na(y)],
         family = eval(parse(text = paste0("stats::", family_y, "()")))
       )
     )
@@ -21,7 +21,7 @@ sup_dim_red_directional_deriv <- function(x, y, theta_x, theta_y, family_x, fami
   Ex = exp_fam_mean(theta_x, family_x)
   Ey = exp_fam_mean(theta_y, family_y)
 
-  term1 = beta[-1] %*% crossprod(y - Ey, eta_centered) %*% Z
+  term1 = beta[-1] %*% crossprod(y[!is.na(y)] - Ey[!is.na(y), , drop = FALSE], eta_centered[!is.na(y), ]) %*% Z
   term2a = crossprod(x - Ex, eta_centered)
   term2 = t(U) %*% (term2a + t(term2a)) %*% Z
   2 * term1 / (ncol(x) * alpha + 1) +
@@ -69,7 +69,7 @@ sup_dim_red_deriv <- function(x, y, theta_x, theta_y, family_x, family_y, alpha,
   Ex = exp_fam_mean(theta_x, family_x)
   Ey = exp_fam_mean(theta_y, family_y)
 
-  term1 = crossprod(eta_centered, Ey - y) %*% t(beta[-1])
+  term1 = crossprod(eta_centered[!is.na(y), ], Ey[!is.na(y), , drop = FALSE] - y[!is.na(y)]) %*% t(beta[-1])
   term2a = crossprod(Ex - x, eta_centered)
   term2 = (term2a + t(term2a)) %*% U
   2 * term1 / (ncol(x) * alpha + 1) +

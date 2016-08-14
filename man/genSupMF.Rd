@@ -35,8 +35,6 @@ genSupMF(x, y, k = 2, alpha = NULL, family_x = c("gaussian", "binomial",
 \item{start_B}{initial value for \code{B}}
 
 \item{mu}{specific value for \code{mu}, the mean vector of \code{x}}
-
-\item{start_beta}{initial value for \code{beta}}
 }
 \value{
 An S3 object of class \code{gsmf} which is a list with the
