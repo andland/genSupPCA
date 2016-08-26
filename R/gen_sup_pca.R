@@ -13,7 +13,9 @@
 #' @param conv_criteria convergence criteria
 #' @param discrete_deriv whether to calculate discrete derivatives w.r.t \code{U}
 #'   instead of the closed form derivative with \code{beta} held constant
-#' @param random_start whether to randomly initialize \code{U}
+#' @param init how to initialize \code{U}. \code{svd} uses the first \code{k} right singular
+#'   vectors of \code{x}. \code{pls} uses the partial least squares loadings. \code{random}
+#'   randomly initializes. This is ignored if \code{start_U} is specified
 #' @param start_U initial value for \code{U}
 #' @param start_beta initial value for \code{beta}
 #' @param mu specific value for \code{mu}, the mean vector of \code{x}
@@ -39,6 +41,7 @@
 #' @import Matrix
 #' @importFrom GrassmannOptim GrassmannOptim
 #' @importFrom FOptM OptStiefelGBB
+#' @importFrom pls kernelpls.fit
 #'
 #' @examples
 #' rows = 100
@@ -51,7 +54,7 @@
 #' response = rbinom(rows, 1, rowSums(mat) / max(rowSums(mat)))
 #'
 #' mod = genSupPCA(mat, response, k = 1, alpha = 0, family_x = "poisson", family_y = "binomial",
-#'                 quiet = FALSE, max_iters_per = 5, grassmann = FALSE)
+#'                 quiet = FALSE, init = "pls")
 #'
 #' plot(inv.logit.mat(cbind(1, mod$PCs) %*% mod$beta), response)
 #' plot(rowSums(mat), response)
@@ -62,12 +65,14 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
                            family_x = c("gaussian", "binomial", "poisson", "multinomial"),
                            family_y = c("gaussian", "binomial", "poisson"), quiet = TRUE,
                            max_iters = 100, max_iters_per = 3, conv_criteria = 1e-5, discrete_deriv = FALSE,
-                           random_start = FALSE, start_U, mu, start_beta, grassmann = FALSE) {
+                           init = c("svd", "pls", "random"), start_U, mu, start_beta, grassmann = FALSE) {
 
   family_x = match.arg(family_x)
   family_y = match.arg(family_y)
   check_family(x, family_x)
   check_family(y, family_y)
+
+  init = match.arg(init)
 
   x = as.matrix(x)
   # missing_mat = is.na(x)
@@ -109,9 +114,12 @@ genSupPCA <- function(x, y, k = 2, alpha = NULL, m = 4,
   if (!missing(start_U)) {
     stopifnot(dim(start_U) == c(d, k))
     Qt = qr.Q(qr(start_U), complete = grassmann)
-  } else if (random_start) {
+  } else if (init == "random") {
     U = matrix(rnorm(d * k), d, k)
     Qt = qr.Q(qr(U), complete = grassmann)
+  } else if (init == "pls") {
+    pls = pls::kernelpls.fit(X = eta_centered, Y = y, ncomp = k, stripped = FALSE)
+    Qt = qr.Q(qr(pls$loadings), complete = grassmann)
   } else {
     if (grassmann) {
       udv = svd(eta_centered)

@@ -7,8 +7,8 @@
 genSupPCA(x, y, k = 2, alpha = NULL, m = 4, family_x = c("gaussian",
   "binomial", "poisson", "multinomial"), family_y = c("gaussian", "binomial",
   "poisson"), quiet = TRUE, max_iters = 100, max_iters_per = 3,
-  conv_criteria = 1e-05, discrete_deriv = FALSE, random_start = FALSE,
-  start_U, mu, start_beta, grassmann = FALSE)
+  conv_criteria = 1e-05, discrete_deriv = FALSE, init = c("svd", "pls",
+  "random"), start_U, mu, start_beta, grassmann = FALSE)
 }
 \arguments{
 \item{x}{covariate matrix}
@@ -36,7 +36,9 @@ genSupPCA(x, y, k = 2, alpha = NULL, m = 4, family_x = c("gaussian",
 \item{discrete_deriv}{whether to calculate discrete derivatives w.r.t \code{U}
 instead of the closed form derivative with \code{beta} held constant}
 
-\item{random_start}{whether to randomly initialize \code{U}}
+\item{init}{how to initialize \code{U}. \code{svd} uses the first \code{k} right singular
+vectors of \code{x}. \code{pls} uses the partial least squares loadings. \code{random}
+randomly initializes. This is ignored if \code{start_U} is specified}
 
 \item{start_U}{initial value for \code{U}}
 
@@ -75,7 +77,7 @@ mat = matrix(rpois(rows * cols, c(exp(mat_np))), rows, cols)
 response = rbinom(rows, 1, rowSums(mat) / max(rowSums(mat)))
 
 mod = genSupPCA(mat, response, k = 1, alpha = 0, family_x = "poisson", family_y = "binomial",
-                quiet = FALSE, max_iters_per = 5, grassmann = FALSE)
+                quiet = FALSE, init = "pls")
 
 plot(inv.logit.mat(cbind(1, mod$PCs) \%*\% mod$beta), response)
 plot(rowSums(mat), response)
