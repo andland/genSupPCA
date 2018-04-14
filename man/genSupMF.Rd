@@ -71,4 +71,9 @@ plot(rowSums(mat), response)
 ggplot(data.frame(PC = mod$PCs[, 1], y = response), aes(PC, y)) + stat_summary_bin(bins = 10)
 }
 }
+\references{
+Rish, Irina, et al. "Closed-form supervised dimensionality
+  reduction with generalized linear models." Proceedings of the 25th
+  international conference on Machine learning. ACM, 2008.
+}
 

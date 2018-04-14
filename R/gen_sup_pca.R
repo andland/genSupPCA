@@ -37,7 +37,7 @@
 #'
 #' @export
 #' @importFrom RSpectra svds
-#' @importFrom stats glm.fit gaussian binomial poisson
+#' @importFrom stats glm.fit gaussian binomial poisson rnorm
 #' @import Matrix
 #' @importFrom GrassmannOptim GrassmannOptim
 #' @importFrom FOptM OptStiefelGBB

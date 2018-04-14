@@ -15,10 +15,12 @@ Depends: Matrix
 Imports:
     ggplot2,
     GrassmannOptim,
-    FOptM,
     logisticPCA,
+    FOptM,
     pls,
     RSpectra (>= 0.10-0)
+Remotes:
+    andland/FOptM
 Suggests:
     testthat (>= 0.11.0)
 RoxygenNote: 5.0.1

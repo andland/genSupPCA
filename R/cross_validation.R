@@ -32,6 +32,7 @@
 #' plot(negloglikes)
 #' }
 #' @export
+#' @importFrom stats predict
 cv.gspca <- function(x, y, ks, alphas = 10^seq(-3, 5, by = .5),
                      family_x, family_y, folds = 5, quiet = TRUE, ...) {
   if (missing(family_x)) {
@@ -116,6 +117,7 @@ cv.gspca <- function(x, y, ks, alphas = 10^seq(-3, 5, by = .5),
 #' plot(loglikes)
 #' }
 #' @export
+#' @importFrom utils type.convert
 plot.cv.gspca <- function(x, ...) {
   # replaces reshape2::melt(-x, value.name = "NegLogLikelihood")
   alphas = type.convert(colnames(x))

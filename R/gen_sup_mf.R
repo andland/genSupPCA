@@ -26,6 +26,10 @@
 #' \item{loss_trace}{the trace of the average negative log likelihood of the algorithm.
 #'    Should be non-increasing}
 #'
+#' @references Rish, Irina, et al. "Closed-form supervised dimensionality
+#'   reduction with generalized linear models." Proceedings of the 25th
+#'   international conference on Machine learning. ACM, 2008.
+#'
 #' @export
 #' @importFrom RSpectra svds
 #' @importFrom stats glm.fit gaussian binomial poisson
@@ -285,7 +289,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
 #' @param type the type of fitting required.
 #'  \code{type = "link"} gives response variable on the natural parameter scale,
 #'  \code{type = "response"} gives response variable on the response scale, and
-#'  \code{type = "response"} gives matrix of principal components of \code{x}
+#'  \code{type = "PCs"} gives matrix of principal components of \code{x}
 #' @param quiet logical; whether the calculation should show progress
 #' @param max_iters maximum number of iterations
 #' @param conv_criteria convergence criteria

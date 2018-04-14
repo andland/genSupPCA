@@ -16,7 +16,7 @@ If missing, will use the data that \code{object} was fit on}
 \item{type}{the type of fitting required.
 \code{type = "link"} gives response variable on the natural parameter scale,
 \code{type = "response"} gives response variable on the response scale, and
-\code{type = "response"} gives matrix of principal components of \code{x}}
+\code{type = "PCs"} gives matrix of principal components of \code{x}}
 
 \item{quiet}{logical; whether the calculation should show progress}
 

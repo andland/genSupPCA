@@ -141,6 +141,7 @@ exp_fam_variance <- function(theta, family, weights = 1.0) {
 }
 
 # @export
+#' @importFrom stats var
 exp_fam_log_like <- function(x, theta, family, weights = 1.0) {
   if (family == "gaussian") {
     return(-0.5 * sum(weights * (x - theta)^2, na.rm = TRUE))
