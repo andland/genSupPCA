@@ -12,7 +12,13 @@
 #' @param random_start whether to randomly initialize \code{A} and \code{B}
 #' @param start_A initial value for \code{A}
 #' @param start_B initial value for \code{B}
+#' @param start_beta initial value for \code{beta}. Only effective if
+#'   \code{update_A_beta} is \code{TRUE}
 #' @param mu specific value for \code{mu}, the mean vector of \code{x}
+#' @param update_A_beta logical; whether to update the scores \code{A} and
+#'   the coefficients \code{beta}
+#' @param lambda an L2 penalty on the parameters to prevent numerical issues.
+#'   This was reportedly used in Rish's implementation
 #'
 #' @return An S3 object of class \code{gsmf} which is a list with the
 #' following components:
@@ -53,10 +59,11 @@
 #' ggplot(data.frame(PC = mod$PCs[, 1], y = response), aes(PC, y)) + stat_summary_bin(bins = 10)
 #' }
 genSupMF <- function(x, y, k = 2, alpha = NULL,
-                      family_x = c("gaussian", "binomial", "poisson"),
-                      family_y = c("gaussian", "binomial", "poisson"), quiet = TRUE,
-                      max_iters = 1000, conv_criteria = 1e-5,
-                      random_start = FALSE, start_A,  start_B, mu) {
+                     family_x = c("gaussian", "binomial", "poisson"),
+                     family_y = c("gaussian", "binomial", "poisson"), quiet = TRUE,
+                     max_iters = 1000, conv_criteria = 1e-5,
+                     random_start = FALSE, start_A, start_B, start_beta, mu,
+                     update_A_beta = TRUE, lambda = 0.01) {
 
   family_x = match.arg(family_x)
   family_y = match.arg(family_y)
@@ -107,7 +114,16 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
     A = udv$u[, 1:k, drop = FALSE] %*% diag(sqrt(udv$d), k, k)
   }
 
-  beta = NULL # as.numeric(solve(crossprod(cbind(1, A)), crossprod(cbind(1, A), y)))
+  if (!missing(start_beta)) {
+    beta = start_beta
+  } else if (random_start) {
+    beta = rnorm(k + 1)
+  } else {
+    if (!update_A_beta) {
+      stop("if update_A_beta is TRUE and random_start is FALSE, then start_beta must be set")
+    }
+    beta = NULL
+  }
 
   loss_trace = numeric(max_iters)
   #   theta = outer(ones, mu) + eta_centered %*% tcrossprod(U)
@@ -135,7 +151,9 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
           start = beta
         )
       )
-      beta = mod_beta$coefficients
+      if (update_A_beta) {
+        beta = mod_beta$coefficients
+      }
     } else {
       theta_y = cbind(1, A) %*% beta
       first_dir = exp_fam_mean(theta_y, family_y)
@@ -144,8 +162,10 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
       W = max(second_dir)
       Z = as.matrix(theta_y + (y - first_dir) / W)
 
-      beta = as.numeric(solve(crossprod(cbind(1, A)) + diag(0.01, k + 1, k + 1),
-                              crossprod(cbind(1, A), Z)))
+      if (update_A_beta) {
+        beta = as.numeric(solve(crossprod(cbind(1, A)) + diag(lambda, k + 1, k + 1),
+                                crossprod(cbind(1, A), Z)))
+      }
     }
 
     # update A
@@ -171,8 +191,10 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
       W[-length(W)] <- W[-length(W)] * alpha
       Z = as.matrix(theta + (cbind(x, y) - first_dir) / outer(ones, W)) - outer(ones, c(mu, beta[1]))
 
-      A = t(solve(t(rbind(B, beta[-1])) %*% diag(W) %*% rbind(B, beta[-1]) + diag(0.01, k, k),
-                  t(rbind(B, beta[-1])) %*% diag(W) %*% t(Z)))
+      if (update_A_beta) {
+        A = t(solve(t(rbind(B, beta[-1])) %*% diag(W) %*% rbind(B, beta[-1]) + diag(lambda, k, k),
+                    t(rbind(B, beta[-1])) %*% diag(W) %*% t(Z)))
+      }
     } else {
       theta = theta_y
       first_dir = first_dir_y
@@ -181,54 +203,61 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
       W = max(second_dir)
       Z = as.matrix(theta + (y - first_dir) / W) - beta[1]
 
-      A = t(solve(t(beta[-1]) %*% beta[-1] + diag(0.01, k, k),
-                  t(beta[-1]) %*% t(Z)))
+      if (update_A_beta) {
+        A = t(solve(t(beta[-1]) %*% beta[-1] + diag(lambda, k, k),
+                    t(beta[-1]) %*% t(Z)))
+      }
     }
 
 
     # update B
+    theta_x = outer(ones, mu) + tcrossprod(A, B)
     first_dir = exp_fam_mean(theta_x, family_x)
     second_dir = exp_fam_variance(theta_x, family_x)
 
     W = apply(second_dir, 1, max)
     Z = as.matrix(theta_x + (x - first_dir) / outer(W, rep(1, d))) - outer(ones, mu)
 
-    B = t(solve(t(A) %*% diag(W, n, n) %*% A + diag(0.01, k, k),
+    B = t(solve(t(A) %*% diag(W, n, n) %*% A + diag(lambda, k, k),
                 t(A) %*% diag(W, n, n) %*% Z))
 
-    # update A again
-    theta_y = cbind(1, A) %*% beta
-    theta_x = outer(ones, mu) + tcrossprod(A, B)
-
-    first_dir_x = exp_fam_mean(theta_x, family_x)
-    first_dir_y = exp_fam_mean(theta_y, family_y)
-    second_dir_x = exp_fam_variance(theta_x, family_x)
-    second_dir_y = exp_fam_variance(theta_y, family_y)
-
-    if (family_y == "binomial" && -exp_fam_log_like(y, theta_y, family_y) < 1e-5) {
-      perfect_fit = TRUE
-    } else if (alpha > 0) {
-      theta = cbind(theta_x, theta_y)
-      first_dir = cbind(first_dir_x, first_dir_y)
-      second_dir = cbind(second_dir_x, second_dir_y)
-
-      W = apply(second_dir, 2, max)
-      W[-length(W)] <- W[-length(W)] * alpha
-      Z = as.matrix(theta + (cbind(x, y) - first_dir) / outer(ones, W)) - outer(ones, c(mu, beta[1]))
-
-      A = t(solve(t(rbind(B, beta[-1])) %*% diag(W) %*% rbind(B, beta[-1]) + diag(0.01, k, k),
-                  t(rbind(B, beta[-1])) %*% diag(W) %*% t(Z)))
-    } else {
-      theta = theta_y
-      first_dir = first_dir_y
-      second_dir = second_dir_y
-
-      W = max(second_dir)
-      Z = as.matrix(theta + (y - first_dir) / W) - beta[1]
-
-      A = t(solve(t(beta[-1]) %*% beta[-1] + diag(0.01, k, k),
-                  t(beta[-1]) %*% t(Z)))
-    }
+    # # update A again
+    # theta_y = cbind(1, A) %*% beta
+    # theta_x = outer(ones, mu) + tcrossprod(A, B)
+    #
+    # first_dir_x = exp_fam_mean(theta_x, family_x)
+    # first_dir_y = exp_fam_mean(theta_y, family_y)
+    # second_dir_x = exp_fam_variance(theta_x, family_x)
+    # second_dir_y = exp_fam_variance(theta_y, family_y)
+    #
+    # if (family_y == "binomial" && -exp_fam_log_like(y, theta_y, family_y) < 1e-5) {
+    #   perfect_fit = TRUE
+    # } else if (alpha > 0) {
+    #   theta = cbind(theta_x, theta_y)
+    #   first_dir = cbind(first_dir_x, first_dir_y)
+    #   second_dir = cbind(second_dir_x, second_dir_y)
+    #
+    #   W = apply(second_dir, 2, max)
+    #   W[-length(W)] <- W[-length(W)] * alpha
+    #   Z = as.matrix(theta + (cbind(x, y) - first_dir) / outer(ones, W)) - outer(ones, c(mu, beta[1]))
+    #
+    #   if (update_A_beta) {
+    #     A = t(solve(t(rbind(B, beta[-1])) %*% diag(W) %*% rbind(B, beta[-1]) + diag(lambda, k, k),
+    #                 t(rbind(B, beta[-1])) %*% diag(W) %*% t(Z)))
+    #   }
+    # } else {
+    #   theta = theta_y
+    #   first_dir = first_dir_y
+    #   second_dir = second_dir_y
+    #
+    #   W = max(second_dir)
+    #   Z = as.matrix(theta + (y - first_dir) / W) - beta[1]
+    #
+    #   if (update_A_beta) {
+    #     A = t(solve(t(beta[-1]) %*% beta[-1] + diag(lambda, k, k),
+    #                 t(beta[-1]) %*% t(Z)))
+    #   }
+    # }
 
     # Calc Deviance
     theta_x = outer(ones, mu) + tcrossprod(A, B)
@@ -251,16 +280,17 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
     }
   }
 
-  mod_beta = suppressWarnings(
-    stats::glm.fit(
-      x = cbind(1, A),
-      y = y,
-      family = eval(parse(text = paste0("stats::", family_y, "()"))),
-      start = beta
+  if (update_A_beta) {
+    mod_beta = suppressWarnings(
+      stats::glm.fit(
+        x = cbind(1, A),
+        y = y,
+        family = eval(parse(text = paste0("stats::", family_y, "()"))),
+        start = beta
+      )
     )
-  )
-
-  beta = mod_beta$coefficients
+    beta = mod_beta$coefficients
+  }
 
   object <- list(
     mu = mu,
