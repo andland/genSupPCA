@@ -12,11 +12,11 @@
 #' @param random_start whether to randomly initialize \code{A} and \code{B}
 #' @param start_A initial value for \code{A}
 #' @param start_B initial value for \code{B}
-#' @param start_beta initial value for \code{beta}. Only effective if
-#'   \code{update_A_beta} is \code{TRUE}
+#' @param start_beta initial value for \code{beta}. Mainly effective if
+#'   \code{update_beta} is \code{TRUE}
 #' @param mu specific value for \code{mu}, the mean vector of \code{x}
-#' @param update_A_beta logical; whether to update the scores \code{A} and
-#'   the coefficients \code{beta}
+#' @param update_A logical; whether to update the scores \code{A}
+#' @param update_beta logical; whether to update the coefficients \code{beta}
 #' @param lambda an L2 penalty on the parameters to prevent numerical issues.
 #'   This was reportedly used in Rish's implementation
 #'
@@ -63,7 +63,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
                      family_y = c("gaussian", "binomial", "poisson"), quiet = TRUE,
                      max_iters = 1000, conv_criteria = 1e-5,
                      random_start = FALSE, start_A, start_B, start_beta, mu,
-                     update_A_beta = TRUE, lambda = 0.01) {
+                     update_A = TRUE, update_beta = TRUE, lambda = 0.01) {
 
   family_x = match.arg(family_x)
   family_y = match.arg(family_y)
@@ -119,8 +119,8 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
   } else if (random_start) {
     beta = rnorm(k + 1)
   } else {
-    if (!update_A_beta) {
-      stop("if update_A_beta is TRUE and random_start is FALSE, then start_beta must be set")
+    if (!update_beta) {
+      stop("if update_beta is TRUE and random_start is FALSE, then start_beta must be set")
     }
     beta = NULL
   }
@@ -151,7 +151,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
           start = beta
         )
       )
-      if (update_A_beta) {
+      if (update_beta) {
         beta = mod_beta$coefficients
       }
     } else {
@@ -162,7 +162,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
       W = max(second_dir)
       Z = as.matrix(theta_y + (y - first_dir) / W)
 
-      if (update_A_beta) {
+      if (update_beta) {
         beta = as.numeric(solve(crossprod(cbind(1, A)) + diag(lambda, k + 1, k + 1),
                                 crossprod(cbind(1, A), Z)))
       }
@@ -191,7 +191,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
       W[-length(W)] <- W[-length(W)] * alpha
       Z = as.matrix(theta + (cbind(x, y) - first_dir) / outer(ones, W)) - outer(ones, c(mu, beta[1]))
 
-      if (update_A_beta) {
+      if (update_A) {
         A = t(solve(t(rbind(B, beta[-1])) %*% diag(W) %*% rbind(B, beta[-1]) + diag(lambda, k, k),
                     t(rbind(B, beta[-1])) %*% diag(W) %*% t(Z)))
       }
@@ -203,7 +203,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
       W = max(second_dir)
       Z = as.matrix(theta + (y - first_dir) / W) - beta[1]
 
-      if (update_A_beta) {
+      if (update_A) {
         A = t(solve(t(beta[-1]) %*% beta[-1] + diag(lambda, k, k),
                     t(beta[-1]) %*% t(Z)))
       }
@@ -241,7 +241,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
     #   W[-length(W)] <- W[-length(W)] * alpha
     #   Z = as.matrix(theta + (cbind(x, y) - first_dir) / outer(ones, W)) - outer(ones, c(mu, beta[1]))
     #
-    #   if (update_A_beta) {
+    #   if (update_A) {
     #     A = t(solve(t(rbind(B, beta[-1])) %*% diag(W) %*% rbind(B, beta[-1]) + diag(lambda, k, k),
     #                 t(rbind(B, beta[-1])) %*% diag(W) %*% t(Z)))
     #   }
@@ -253,7 +253,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
     #   W = max(second_dir)
     #   Z = as.matrix(theta + (y - first_dir) / W) - beta[1]
     #
-    #   if (update_A_beta) {
+    #   if (update_A) {
     #     A = t(solve(t(beta[-1]) %*% beta[-1] + diag(lambda, k, k),
     #                 t(beta[-1]) %*% t(Z)))
     #   }
@@ -280,7 +280,7 @@ genSupMF <- function(x, y, k = 2, alpha = NULL,
     }
   }
 
-  if (update_A_beta) {
+  if (update_beta) {
     mod_beta = suppressWarnings(
       stats::glm.fit(
         x = cbind(1, A),
